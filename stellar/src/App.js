@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Container, Row, Col, Card, Button, Form } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Form, Table} from 'react-bootstrap';
 import StellarSdk from 'stellar-sdk';
 import firebase from './Firebase';
 import './App.css';
@@ -11,7 +11,8 @@ class App extends Component {
     super(props);
     this.state = {
       stellerTestUrl: "https://horizon-testnet.stellar.org",
-      log: []
+      log: [],
+      richlist: []
     }
 
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -38,6 +39,17 @@ class App extends Component {
         log: [...this.state.log, log]
       })
     }
+
+    // Get the richlist from firebase
+    const db = firebase.firestore();
+    db.collection("accounts").onSnapshot((snapshot) => {
+        snapshot.forEach((doc) => {
+          const data = doc.data()
+          this.setState({
+            richlist: [...this.state.richlist, data]
+          })
+        });
+    });
   }
 
   handleSubmit(e) {
@@ -86,7 +98,8 @@ class App extends Component {
                     " View transaction at : " + results._links.transaction.href + "."
 
         this.setState({
-          log: [...this.state.log, log]
+          log: [...this.state.log, log],
+          richlist: []
         })
       })
   };
@@ -104,33 +117,63 @@ class App extends Component {
           </Row>
 
           <Row>
-              <Col sm={7}>
-                <Card>
-                  <Card.Header>Creare an account</Card.Header>
-                  <Card.Body>
-                  <Form style={{"textAlign":"left"}} onSubmit={this.handleSubmit}>
-                    <Form.Group>
-                      <Form.Label>Full Names</Form.Label>
-                      <Form.Control type="text" name="fullnames" placeholder="Enter your fullnames" required />
-                    </Form.Group>
+              <Col sm={8}>
 
-                    <Form.Group>
-                      <Form.Label>Email Address</Form.Label>
-                      <Form.Control type="email" name="email" placeholder="Enter your email address" required />
-                      <Form.Text className="text-muted">
-                        We'll never share your email with anyone else.
-                      </Form.Text>
-                    </Form.Group>
+                <div style={{"width":"100%"}}>
+                  <Card>
+                    <Card.Header>Creare an account</Card.Header>
+                    <Card.Body>
+                      <Form style={{"textAlign":"left"}} onSubmit={this.handleSubmit}>
+                        <Form.Group>
+                          <Form.Label>Full Names</Form.Label>
+                          <Form.Control type="text" name="fullnames" placeholder="Enter your fullnames" required />
+                        </Form.Group>
 
-                    <Button variant="primary" type="submit">
-                      Submit
-                    </Button>
-                  </Form>
-                  </Card.Body>
-                </Card>
+                        <Form.Group>
+                          <Form.Label>Email Address</Form.Label>
+                          <Form.Control type="email" name="email" placeholder="Enter your email address" required />
+                          <Form.Text className="text-muted">
+                            We'll never share your email with anyone else.
+                          </Form.Text>
+                        </Form.Group>
+
+                        <Button variant="primary" type="submit">
+                          Submit
+                        </Button>
+                      </Form>
+                    </Card.Body>
+                  </Card>
+                </div>
+
+                <div style={{"width":"100%", "marginTop":"20px"}}>
+                  <Card>
+                    <Card.Header>Richlist</Card.Header>
+                    <Card.Body>
+                      <Table striped style={{"textAlign":"left"}}>
+                        <thead>
+                          <tr>
+                            <th>Account</th>
+                            <th>Secret</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {this.state.richlist.map((account) => {
+                            return(
+                              <tr>
+                                <td>{account.account_pubkey.substring(0,3) + "..." + account.account_pubkey.slice(account.account_pubkey.length - 2)}</td>
+                                <td>{account.account_secret.substring(0, (account.account_secret.length - 7))}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </Table>
+                    </Card.Body>
+                  </Card>
+                </div>
+
               </Col>
 
-              <Col sm={5}>
+              <Col sm={4}>
                 <Card>  
                   <Card.Header>Log</Card.Header>
                   <Card.Body style={{"textAlign":"left", "fontSize":"12px"}}>
