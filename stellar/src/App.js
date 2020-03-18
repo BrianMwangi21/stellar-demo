@@ -52,56 +52,83 @@ class App extends Component {
     });
   }
 
-  handleSubmit(e) {
+  handleSubmit = async(e) => {
     e.preventDefault();
-    const data = new FormData(e.target);
+    const formdata = new FormData(e.target);
+
+    // First get the payment
+    const axios = require('axios');
+    axios.defaults.headers = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept",
+        "Content-Type": "application/json",
+        "username": "sandbox",
+        "apiKey": "a3726b0726f6f8688fb166fd4768b7729e5081e76b2946fb387cbe1a66d4ef79"
+    }
+    const data = {
+        "username": "sandbox",
+        "productName": "Shilingi",
+        "phoneNumber": formdata.get("phonenumber"),
+        "currencyCode": "KES",
+        "amount": 120.00
+    }
+
+    axios.post(
+        "https://cors-anywhere.herokuapp.com/https://payments.sandbox.africastalking.com/mobile/checkout/request",
+        data
+    ).then(response => {
+      console.log(response);
+    }).catch(e => {
+      console.log(e);
+    })
 
     // Create new account on Stellar first
-    const server = new StellarSdk.Server('https://horizon-testnet.stellar.org')
-    const source = StellarSdk.Keypair.fromSecret('SBX2RPEN7JGEFDFCM2EDPWBTVM5RKP37CGPHLXOXIFZ77WG62Z6RGSQG')
-    const destination = StellarSdk.Keypair.random()
+    // const server = new StellarSdk.Server('https://horizon-testnet.stellar.org')
+    // const source = StellarSdk.Keypair.fromSecret('SBX2RPEN7JGEFDFCM2EDPWBTVM5RKP37CGPHLXOXIFZ77WG62Z6RGSQG')
+    // const destination = StellarSdk.Keypair.random()
 
-    // Give 1 XLM as initial balance
-    server.accounts()
-      .accountId(source.publicKey())
-      .call()
-      .then(({ sequence }) => {
-        const account = new StellarSdk.Account(source.publicKey(), sequence)
-        const transaction = new StellarSdk.TransactionBuilder(account, {
-          fee: StellarSdk.BASE_FEE,
-          networkPassphrase: StellarSdk.Networks.TESTNET
-        })
-        .addOperation(StellarSdk.Operation.createAccount({
-          destination: destination.publicKey(),
-          startingBalance: '1'
-        }))
-        .setTimeout(30)
-        .build()
-        transaction.sign(StellarSdk.Keypair.fromSecret(source.secret()))
-        return server.submitTransaction(transaction)
-      })
-      .then(results => {
-        // Save on firebase
-        const db = firebase.firestore();
-        db.collection("accounts").add({
-          fullnames: data.get("fullnames"),
-          email: data.get("email"),
-          account_pubkey: destination.publicKey(),
-          account_secret: destination.secret(),
-          transaction_href: results._links.transaction.href,
-          timestamp: new Date()
-        });
+    // // Give 1 XLM as initial balance
+    // server.accounts()
+    //   .accountId(source.publicKey())
+    //   .call()
+    //   .then(({ sequence }) => {
+    //     const account = new StellarSdk.Account(source.publicKey(), sequence)
+    //     const transaction = new StellarSdk.TransactionBuilder(account, {
+    //       fee: StellarSdk.BASE_FEE,
+    //       networkPassphrase: StellarSdk.Networks.TESTNET
+    //     })
+    //     .addOperation(StellarSdk.Operation.createAccount({
+    //       destination: destination.publicKey(),
+    //       startingBalance: '1'
+    //     }))
+    //     .setTimeout(30)
+    //     .build()
+    //     transaction.sign(StellarSdk.Keypair.fromSecret(source.secret()))
+    //     return server.submitTransaction(transaction)
+    //   })
+    //   .then(results => {
+    //     // Save on firebase
+    //     const db = firebase.firestore();
+    //     db.collection("accounts").add({
+    //       fullnames: formdata.get("fullnames"),
+    //       email: formdata.get("email"),
+    //       phonenumber : formdata.get("phonenumber"), 
+    //       account_pubkey: destination.publicKey(),
+    //       account_secret: destination.secret(),
+    //       transaction_href: results._links.transaction.href,
+    //       timestamp: new Date()
+    //     });
         
-        // Log new state
-        const log = new Date() + 
-                    " : Account " + destination.publicKey().substring(0,5) + "... created." +
-                    " View transaction at : " + results._links.transaction.href + "."
+    //     // Log new state
+    //     const log = new Date() + 
+    //                 " : Account " + destination.publicKey().substring(0,5) + "... created." +
+    //                 " View transaction at : " + results._links.transaction.href + "."
 
-        this.setState({
-          log: [...this.state.log, log],
-          richlist: []
-        })
-      })
+    //     this.setState({
+    //       log: [...this.state.log, log],
+    //       richlist: []
+    //     })
+    //   })
   };
   
   render() {
@@ -127,6 +154,15 @@ class App extends Component {
                         <Form.Group>
                           <Form.Label>Full Names</Form.Label>
                           <Form.Control type="text" name="fullnames" placeholder="Enter your fullnames" required />
+                        </Form.Group>
+
+                        <Form.Group>
+                          <Form.Label>Phone Number</Form.Label>
+                          <Form.Control type="text" name="phonenumber" placeholder="Enter your phone number in the form of : +254716XXXXXX" required />
+                          <Form.Text className="text-muted">
+                            Since the ratio of the Shilingi token to the Kenyan currency is 1:1.2, you will be charged 120 KES for 100 Shilingi tokens. <br />
+                            Read the <a href="/">white paper</a> for more info
+                          </Form.Text>
                         </Form.Group>
 
                         <Form.Group>
