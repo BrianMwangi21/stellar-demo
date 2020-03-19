@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Container, Row, Col, Card, Button, Form, Table} from 'react-bootstrap';
 import StellarSdk from 'stellar-sdk';
+import shilingiAsset from './Shilingi';
 import firebase from './Firebase';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -50,6 +51,25 @@ class App extends Component {
           })
         });
     });
+
+    // Check if shilingi asset is native or not.
+    const isNative = shilingiAsset.isNative();
+
+    if( isNative ) {
+      // Set log info
+      const log = new Date() + " : Shilingi Token NATIVE. Something is wrong.";
+      
+      this.setState({
+        log: [...this.state.log, log]
+      })
+    }else {
+      // Set log info
+      const log = new Date() + " : Shilingi Token Non-NATIVE. All is well.";
+      
+      this.setState({
+        log: [...this.state.log, log]
+      })
+    }
   }
 
   handleSubmit = async(e) => {
