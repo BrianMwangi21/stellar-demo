@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Container, Row, Col, Card, Button, Form, Table} from 'react-bootstrap';
 import StellarSdk from 'stellar-sdk';
 // import shilingiAsset from './Shilingi';
+import LoadingOverlay from 'react-loading-overlay';
 import firebase from './Firebase';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -13,7 +14,11 @@ class App extends Component {
     this.state = {
       stellerTestUrl: "https://horizon-testnet.stellar.org",
       log: [],
-      richlist: []
+      richlist: [],
+      isActive: false,
+      fullnames: "",
+      phonenumber: "",
+      email: ""
     }
 
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -54,6 +59,11 @@ class App extends Component {
   }
 
   handleSubmit = async(e) => {
+    // Set ovelay
+    this.setState({
+      isActive: true
+    });
+
     e.preventDefault();
     const formdata = new FormData(e.target);
 
@@ -141,7 +151,11 @@ class App extends Component {
 
         this.setState({
           log: [...this.state.log, log],
-          richlist: []
+          richlist: [],
+          isActive: false,
+          fullnames: "",
+          phonenumber: "",
+          email: ""
         })
       })
       .catch(function(error) {
@@ -151,99 +165,101 @@ class App extends Component {
   
   render() {
     return (
-      <div className="App">
-        <Container>
-          <Row>
-            <Col sm>
-              <h1 style={{"paddingTop":"16px"}}>stellar-demo</h1>
-              <h6 style={{"paddingTop":"4px"}}>by Mwangi Kabiru</h6>
-              <hr style={{"width":"100%"}} />
-            </Col>
-          </Row>
+      <LoadingOverlay active={this.state.isActive} spinner text='Creating and funding your account...'>
+        <div className="App">
+          <Container>
+            <Row>
+              <Col sm>
+                <h1 style={{"paddingTop":"16px"}}>stellar-demo</h1>
+                <h6 style={{"paddingTop":"4px"}}>by Mwangi Kabiru</h6>
+                <hr style={{"width":"100%"}} />
+              </Col>
+            </Row>
 
-          <Row>
-              <Col sm={8}>
+            <Row>
+                <Col sm={8}>
 
-                <div style={{"width":"100%"}}>
-                  <Card>
-                    <Card.Header>Creare an account</Card.Header>
-                    <Card.Body>
-                      <Form style={{"textAlign":"left"}} onSubmit={this.handleSubmit}>
-                        <Form.Group>
-                          <Form.Label>Full Names</Form.Label>
-                          <Form.Control type="text" name="fullnames" placeholder="Enter your fullnames" required />
-                        </Form.Group>
+                  <div style={{"width":"100%"}}>
+                    <Card>
+                      <Card.Header>Creare an account</Card.Header>
+                      <Card.Body>
+                        <Form style={{"textAlign":"left"}} onSubmit={this.handleSubmit}>
+                          <Form.Group>
+                            <Form.Label>Full Names</Form.Label>
+                            <Form.Control type="text" name="fullnames" value={this.state.fullnames} placeholder="Enter your fullnames" required />
+                          </Form.Group>
 
-                        <Form.Group>
-                          <Form.Label>Phone Number</Form.Label>
-                          <Form.Control type="text" name="phonenumber" placeholder="Enter your phone number in the form of : +254716XXXXXX" required />
-                          <Form.Text className="text-muted">
-                            Since the ratio of the Shilingi token to the Kenyan currency is 1:1.2, you will be charged 120 KES for 100 Shilingi tokens. <br />
-                            Read the <a href="/">white paper</a> for more info
-                          </Form.Text>
-                        </Form.Group>
+                          <Form.Group>
+                            <Form.Label>Phone Number</Form.Label>
+                            <Form.Control type="text" name="phonenumber" value={this.state.phonenumber} placeholder="Enter your phone number in the form of : +254716XXXXXX" required />
+                            <Form.Text className="text-muted">
+                              Since the ratio of the Shilingi token to the Kenyan currency is 1:1.2, you will be charged 120 KES for 100 Shilingi tokens. <br />
+                              Read the <a href="/">white paper</a> for more info
+                            </Form.Text>
+                          </Form.Group>
 
-                        <Form.Group>
-                          <Form.Label>Email Address</Form.Label>
-                          <Form.Control type="email" name="email" placeholder="Enter your email address" required />
-                          <Form.Text className="text-muted">
-                            We'll never share your email with anyone else.
-                          </Form.Text>
-                        </Form.Group>
+                          <Form.Group>
+                            <Form.Label>Email Address</Form.Label>
+                            <Form.Control type="email" name="email" value={this.state.email} placeholder="Enter your email address" required />
+                            <Form.Text className="text-muted">
+                              We'll never share your email with anyone else.
+                            </Form.Text>
+                          </Form.Group>
 
-                        <Button variant="primary" type="submit">
-                          Submit
-                        </Button>
-                      </Form>
+                          <Button variant="primary" type="submit">
+                            Submit
+                          </Button>
+                        </Form>
+                      </Card.Body>
+                    </Card>
+                  </div>
+
+                  <div style={{"width":"100%", "marginTop":"20px"}}>
+                    <Card>
+                      <Card.Header>Richlist</Card.Header>
+                      <Card.Body>
+                        <Table striped style={{"textAlign":"left"}}>
+                          <thead>
+                            <tr>
+                              <th>Account</th>
+                              <th>Secret</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {this.state.richlist.map((account) => {
+                              return(
+                                <tr>
+                                  <td>{account.account_pubkey.substring(0,3) + "..." + account.account_pubkey.slice(account.account_pubkey.length - 2)}</td>
+                                  <td>{account.account_secret}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </Table>
+                      </Card.Body>
+                    </Card>
+                  </div>
+
+                </Col>
+
+                <Col sm={4}>
+                  <Card>  
+                    <Card.Header>Log</Card.Header>
+                    <Card.Body style={{"textAlign":"left", "fontSize":"12px"}}>
+                      <p>
+                        {this.state.log.reverse().map((log) => {
+                          return(
+                            <p>{log}</p>
+                          )
+                        })}
+                      </p>
                     </Card.Body>
                   </Card>
-                </div>
-
-                <div style={{"width":"100%", "marginTop":"20px"}}>
-                  <Card>
-                    <Card.Header>Richlist</Card.Header>
-                    <Card.Body>
-                      <Table striped style={{"textAlign":"left"}}>
-                        <thead>
-                          <tr>
-                            <th>Account</th>
-                            <th>Secret</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {this.state.richlist.map((account) => {
-                            return(
-                              <tr>
-                                <td>{account.account_pubkey.substring(0,3) + "..." + account.account_pubkey.slice(account.account_pubkey.length - 2)}</td>
-                                <td>{account.account_secret}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </Table>
-                    </Card.Body>
-                  </Card>
-                </div>
-
-              </Col>
-
-              <Col sm={4}>
-                <Card>  
-                  <Card.Header>Log</Card.Header>
-                  <Card.Body style={{"textAlign":"left", "fontSize":"12px"}}>
-                    <p>
-                      {this.state.log.reverse().map((log) => {
-                        return(
-                          <p>{log}</p>
-                        )
-                      })}
-                    </p>
-                  </Card.Body>
-                </Card>
-              </Col>
-          </Row>
-        </Container>  
-      </div>
+                </Col>
+            </Row>
+          </Container>  
+        </div>
+      </LoadingOverlay>
     );
   }
 }
