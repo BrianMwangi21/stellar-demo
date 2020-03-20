@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Container, Row, Col, Card, Button, Form, Table} from 'react-bootstrap';
 import StellarSdk from 'stellar-sdk';
-import shilingiAsset from './Shilingi';
+// import shilingiAsset from './Shilingi';
 import firebase from './Firebase';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -51,25 +51,6 @@ class App extends Component {
           })
         });
     });
-
-    // Check if shilingi asset is native or not.
-    const isNative = shilingiAsset.isNative();
-
-    if( isNative ) {
-      // Set log info
-      const log = new Date() + " : Shilingi Token NATIVE. Something is wrong.";
-      
-      this.setState({
-        log: [...this.state.log, log]
-      })
-    }else {
-      // Set log info
-      const log = new Date() + " : Shilingi Token Non-NATIVE. All is well.";
-      
-      this.setState({
-        log: [...this.state.log, log]
-      })
-    }
   }
 
   handleSubmit = async(e) => {
@@ -102,53 +83,70 @@ class App extends Component {
       console.log(e);
     })
 
-    // Create new account on Stellar first
-    // const server = new StellarSdk.Server('https://horizon-testnet.stellar.org')
-    // const source = StellarSdk.Keypair.fromSecret('SBX2RPEN7JGEFDFCM2EDPWBTVM5RKP37CGPHLXOXIFZ77WG62Z6RGSQG')
-    // const destination = StellarSdk.Keypair.random()
+    // Use shilingi source 1, the distributor, and create random destination
+    const server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+    const issuingKeys = StellarSdk.Keypair.fromSecret('SAP467V4Q5MQGTDKOLJS2EBPDMIQECUNI632N2VTOBPZ2V76K4D2TCG7');
+    const source = StellarSdk.Keypair.fromSecret('SCVDA7G3S55ZKA26Q7ZV4DN3BCQRDTHWVY4OXFVCSAEKJZ7PDKJEKG2V');
+    const destination = StellarSdk.Keypair.random();
 
-    // // Give 1 XLM as initial balance
-    // server.accounts()
-    //   .accountId(source.publicKey())
-    //   .call()
-    //   .then(({ sequence }) => {
-    //     const account = new StellarSdk.Account(source.publicKey(), sequence)
-    //     const transaction = new StellarSdk.TransactionBuilder(account, {
-    //       fee: StellarSdk.BASE_FEE,
-    //       networkPassphrase: StellarSdk.Networks.TESTNET
-    //     })
-    //     .addOperation(StellarSdk.Operation.createAccount({
-    //       destination: destination.publicKey(),
-    //       startingBalance: '1'
-    //     }))
-    //     .setTimeout(30)
-    //     .build()
-    //     transaction.sign(StellarSdk.Keypair.fromSecret(source.secret()))
-    //     return server.submitTransaction(transaction)
-    //   })
-    //   .then(results => {
-    //     // Save on firebase
-    //     const db = firebase.firestore();
-    //     db.collection("accounts").add({
-    //       fullnames: formdata.get("fullnames"),
-    //       email: formdata.get("email"),
-    //       phonenumber : formdata.get("phonenumber"), 
-    //       account_pubkey: destination.publicKey(),
-    //       account_secret: destination.secret(),
-    //       transaction_href: results._links.transaction.href,
-    //       timestamp: new Date()
-    //     });
+    // Create account, Give 1 XLM as initial balance
+    server.accounts()
+      .accountId(source.publicKey())
+      .call()
+      .then(({ sequence }) => {
+        const account = new StellarSdk.Account(source.publicKey(), sequence)
+        const transaction = new StellarSdk.TransactionBuilder(account, {
+          fee: StellarSdk.BASE_FEE,
+          networkPassphrase: StellarSdk.Networks.TESTNET
+        })
+        .addOperation(StellarSdk.Operation.createAccount({
+          destination: destination.publicKey(),
+          startingBalance: '10'
+        }))
+        .addOperation(StellarSdk.Operation.changeTrust({
+          source: destination.publicKey(),
+          asset: new StellarSdk.Asset('KES4042', issuingKeys.publicKey())
+        }))
+        .addOperation(StellarSdk.Operation.payment({
+          destination: destination.publicKey(),
+          asset: new StellarSdk.Asset('KES4042', issuingKeys.publicKey()),
+          amount: '100'
+        }))
+        .setTimeout(100)
+        .build()
+        transaction.sign(source)
+        transaction.sign(destination)
+        return server.submitTransaction(transaction)
+      })
+      .then(results => {
+        console.log("Account created, trusted and token issued", results, source.publicKey(), destination.publicKey());
+
+        // Save on firebase
+        const db = firebase.firestore();
+        db.collection("accounts").add({
+          fullnames: formdata.get("fullnames"),
+          email: formdata.get("email"),
+          phonenumber : formdata.get("phonenumber"), 
+          account_pubkey: destination.publicKey(),
+          account_secret: destination.secret(),
+          kes4202_tokens: "100",
+          transaction_href: results._links.transaction.href,
+          timestamp: new Date()
+        });
         
-    //     // Log new state
-    //     const log = new Date() + 
-    //                 " : Account " + destination.publicKey().substring(0,5) + "... created." +
-    //                 " View transaction at : " + results._links.transaction.href + "."
+        // Log new state
+        const log = new Date() + 
+                    " : Account " + destination.publicKey().substring(0,5) + "... created." +
+                    " View transaction at : " + results._links.transaction.href + "."
 
-    //     this.setState({
-    //       log: [...this.state.log, log],
-    //       richlist: []
-    //     })
-    //   })
+        this.setState({
+          log: [...this.state.log, log],
+          richlist: []
+        })
+      })
+      .catch(function(error) {
+        console.error('Error!', error);
+      });
   };
   
   render() {
@@ -217,7 +215,7 @@ class App extends Component {
                             return(
                               <tr>
                                 <td>{account.account_pubkey.substring(0,3) + "..." + account.account_pubkey.slice(account.account_pubkey.length - 2)}</td>
-                                <td>{account.account_secret.substring(0, (account.account_secret.length - 7))}</td>
+                                <td>{account.account_secret}</td>
                               </tr>
                             );
                           })}
