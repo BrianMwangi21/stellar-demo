@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
-import { Container, Row, Col, Card, Button, Form, Table} from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Form} from 'react-bootstrap';
 import StellarSdk from 'stellar-sdk';
+import { Link } from 'react-router-dom';
 // import shilingiAsset from './Shilingi';
 import LoadingOverlay from 'react-loading-overlay';
 import firebase from './Firebase';
@@ -14,11 +15,7 @@ class App extends Component {
     this.state = {
       stellerTestUrl: "https://horizon-testnet.stellar.org",
       log: [],
-      richlist: [],
-      isActive: false,
-      fullnames: "",
-      phonenumber: "",
-      email: ""
+      isActive: false
     }
 
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -45,17 +42,6 @@ class App extends Component {
         log: [...this.state.log, log]
       })
     }
-
-    // Get the richlist from firebase
-    const db = firebase.firestore();
-    db.collection("accounts").onSnapshot((snapshot) => {
-        snapshot.forEach((doc) => {
-          const data = doc.data()
-          this.setState({
-            richlist: [...this.state.richlist, data]
-          })
-        });
-    });
   }
 
   handleSubmit = async(e) => {
@@ -95,8 +81,8 @@ class App extends Component {
 
     // Use shilingi source 1, the distributor, and create random destination
     const server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
-    const issuingKeys = StellarSdk.Keypair.fromSecret('SAP467V4Q5MQGTDKOLJS2EBPDMIQECUNI632N2VTOBPZ2V76K4D2TCG7');
-    const source = StellarSdk.Keypair.fromSecret('SCVDA7G3S55ZKA26Q7ZV4DN3BCQRDTHWVY4OXFVCSAEKJZ7PDKJEKG2V');
+    const issuingKeys = StellarSdk.Keypair.fromSecret('SDEUENDGSAQTEQPBYFSBKBU26B3LPH2SFLENZST3KH2KJK3XN7WDCHLG');
+    const source = StellarSdk.Keypair.fromSecret('SAZPYC6UMU6DO3JXMADZXWNGOCHSUS357GIUNO4FFPJ5VMZYUQKYIW2S');
     const destination = StellarSdk.Keypair.random();
 
     // Create account, Give 1 XLM as initial balance
@@ -115,11 +101,11 @@ class App extends Component {
         }))
         .addOperation(StellarSdk.Operation.changeTrust({
           source: destination.publicKey(),
-          asset: new StellarSdk.Asset('KES4042', issuingKeys.publicKey())
+          asset: new StellarSdk.Asset('KES4042V2', issuingKeys.publicKey())
         }))
         .addOperation(StellarSdk.Operation.payment({
           destination: destination.publicKey(),
-          asset: new StellarSdk.Asset('KES4042', issuingKeys.publicKey()),
+          asset: new StellarSdk.Asset('KES4042V2', issuingKeys.publicKey()),
           amount: '100'
         }))
         .setTimeout(100)
@@ -139,7 +125,7 @@ class App extends Component {
           phonenumber : formdata.get("phonenumber"), 
           account_pubkey: destination.publicKey(),
           account_secret: destination.secret(),
-          kes4202_tokens: "100",
+          kes4202_v2_tokens: "100",
           transaction_href: results._links.transaction.href,
           timestamp: new Date()
         });
@@ -151,11 +137,7 @@ class App extends Component {
 
         this.setState({
           log: [...this.state.log, log],
-          richlist: [],
-          isActive: false,
-          fullnames: "",
-          phonenumber: "",
-          email: ""
+          isActive: false
         })
       })
       .catch(function(error) {
@@ -171,7 +153,7 @@ class App extends Component {
             <Row>
               <Col sm>
                 <h1 style={{"paddingTop":"16px"}}>stellar-demo</h1>
-                <h6 style={{"paddingTop":"4px"}}>by Mwangi Kabiru</h6>
+                <h6 style={{"paddingTop":"4px"}}><Link to="/">Home</Link> / by Mwangi Kabiru / <Link to="/richlist">View Richlist</Link></h6>
                 <hr style={{"width":"100%"}} />
               </Col>
             </Row>
@@ -210,32 +192,6 @@ class App extends Component {
                             Submit
                           </Button>
                         </Form>
-                      </Card.Body>
-                    </Card>
-                  </div>
-
-                  <div style={{"width":"100%", "marginTop":"20px"}}>
-                    <Card>
-                      <Card.Header>Richlist</Card.Header>
-                      <Card.Body>
-                        <Table striped style={{"textAlign":"left"}}>
-                          <thead>
-                            <tr>
-                              <th>Account</th>
-                              <th>Secret</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {this.state.richlist.map((account) => {
-                              return(
-                                <tr>
-                                  <td>{account.account_pubkey.substring(0,3) + "..." + account.account_pubkey.slice(account.account_pubkey.length - 2)}</td>
-                                  <td>{account.account_secret}</td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </Table>
                       </Card.Body>
                     </Card>
                   </div>
