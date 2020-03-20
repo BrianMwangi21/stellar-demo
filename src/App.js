@@ -186,12 +186,12 @@ class App extends Component {
                         <Form style={{"textAlign":"left"}} onSubmit={this.handleSubmit}>
                           <Form.Group>
                             <Form.Label>Full Names</Form.Label>
-                            <Form.Control type="text" name="fullnames" value={this.state.fullnames} placeholder="Enter your fullnames" required />
+                            <Form.Control type="text" name="fullnames" placeholder="Enter your fullnames" required />
                           </Form.Group>
 
                           <Form.Group>
                             <Form.Label>Phone Number</Form.Label>
-                            <Form.Control type="text" name="phonenumber" value={this.state.phonenumber} placeholder="Enter your phone number in the form of : +254716XXXXXX" required />
+                            <Form.Control type="text" name="phonenumber" placeholder="Enter your phone number in the form of : +254716XXXXXX" required />
                             <Form.Text className="text-muted">
                               Since the ratio of the Shilingi token to the Kenyan currency is 1:1.2, you will be charged 120 KES for 100 Shilingi tokens. <br />
                               Read the <a href="/">white paper</a> for more info
@@ -200,7 +200,7 @@ class App extends Component {
 
                           <Form.Group>
                             <Form.Label>Email Address</Form.Label>
-                            <Form.Control type="email" name="email" value={this.state.email} placeholder="Enter your email address" required />
+                            <Form.Control type="email" name="email" placeholder="Enter your email address" required />
                             <Form.Text className="text-muted">
                               We'll never share your email with anyone else.
                             </Form.Text>
